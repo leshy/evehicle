@@ -1,0 +1,135 @@
+#+TITLE: Jannis Magma
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://demo.thi.ng/org-spec/css/style.css"/>
+
+* Samples
+
+[[./samples/3.jpg]]
+[[./samples/5.jpg]]
+[[./samples/1.jpg]]
+
+* generative "Biologically inspired" diffusers
+
+  https://www.thingiverse.com/thing:1883446
+
+  for diffusers: 
+
+  [[./samples/bulb1.jpg]]
+  [[./samples/bulb3.jpg]]
+  [[./samples/bulb4.jpg]]
+
+  every component can be made in a similar style
+
+* Tech Structure
+
+#+BEGIN_SRC dot :file basic.png :cmdline -Kdot -Tpng -Gdpi=120
+  digraph {
+    rankdir=LR;
+    bgcolor=transparent;
+    edge [color="#000000AA" fillcolor="#00000030" style="solid"]
+    node [fontname=terminus fontcolor=black shape=box color="#000000AA" style="solid"]
+    nodesep=0.3;
+    
+    solar_panel -> battery -> ESP_controller -> { bulb_1, bulb_2, bulb_3, bulb_4, bulb_5, bulb_6  }
+}
+#+END_SRC
+
+* ESP based mesh control network
+  https://github.com/gmag11/painlessMesh
+
+  https://github.com/Coopdis/easyMesh
+
+  https://github.com/martin-ger/esp_wifi_repeater
+
+  let's use lua, write a module dude
+
+* Expected power draw
+  WS2812B - https://www.seeedstudio.com/document/pdf/WS2812B%20Datasheet.pdf
+
+  1 LED draws max 5 mA from a 5V supply (tested)
+
+  9 leds per bulb = ~50ma max
+
+** TODO test with covers to make sure 9 led bulb is bright enough
+
+
+* Battery
+  3200 mah seems ok,
+  3 18650 cells in 3S1P configuration to get 9.6v - 12.6v
+
+  Battery cell 3 EUR - full bat is 9 EUR
+
+  roughly,
+
+  [[./samples/battery.jpg]]
+
+* Solar panel  
+  Solar panel ~10W seems ok
+
+* Estimates
+
+| mA/LED | LED/Bulb | Bulbs | Battery (mAh) | Solar (mA) | Total Draw (mA) | Working Hours | Charging Hours |
+|--------+----------+-------+---------------+------------+-----------------+---------------+----------------|
+|      5 |        9 |     6 |          3200 |      10000 |           270.0 |            12 |              5 |
+|      5 |        9 |    12 |          3200 |      10000 |           540.0 |             6 |              5 |
+|      5 |       12 |     6 |          3200 |      10000 |           360.0 |             9 |              5 |
+|      5 |       15 |     6 |          3200 |      10000 |           450.0 |             7 |              5 |
+#+TBLFM: $6='(float (* (* $1 $2) $3)) ;N ::  $7='(round (/ $4 (float (* (* $1 $2) $3))));N :: $8='(round (/ $4 (* (/ (float $5) 12)) 0.7));N
+
+ 
+* modular and interchangable connectors
+  check GX16 standard,
+
+  [[./samples/powerconnector1.jpg]]
+  
+- both solar and battery have standard input/output connectors, so they can be chained, or replaced with a grid/centralized source
+- dark outside? chain some solar panels
+- need more capaciy? chain batteries
+- running on the grid? get rid of solar and batteries, connect grid directly
+  
+#+BEGIN_SRC dot :file simple1.png :cmdline -Kdot -Tpng -Gdpi=120
+  digraph {
+    rankdir=LR;
+    bgcolor=transparent;
+    edge [color="#000000AA" fillcolor="#00000030" style="solid"]
+    node [fontname=terminus fontcolor=black shape=box color="#000000AA" style="solid"]
+    nodesep=0.3;
+    
+    { power_source, solar }  -> battery -> ESP_controller -> bulbs
+
+    power_source -> { solar, ESP_controller }
+
+}
+#+END_SRC
+
+ think about flexibility on numbers of bulbs with some top limit (12?) (autodetect strip length?)
+
+ GX16 for bulbs as well (6 pin)?
+   [[./samples/bulbconnector1.jpg]]
+
+- since we are running on a bus, it' possible to drag one cable far and then split it into multiple cables for multiple bulbs wih some Y or X connectors
+
+- maybe controller has only one connector, we use spliters to distribute
+
+
+#+BEGIN_SRC dot :file splitter.png :cmdline -Kdot -Tpng -Gdpi=120
+  digraph {
+    rankdir=LR;
+    bgcolor=transparent;
+    edge [color="#000000AA" fillcolor="#00000030" style="solid"]
+    node [fontname=terminus fontcolor=black shape=box color="#000000AA" style="solid"]
+    nodesep=0.3;
+    
+    ESP_controller -> { bulb_1, bulb_2, Y_splitter_1  }
+    Y_splitter_1 -> { bulb_3, Y_splitter_2 }
+    Y_splitter_2 -> { bulb_4, bulb_5 }
+
+}
+#+END_SRC
+
+
+
+* Software
+- 3d position map of bulbs for running spacial algorithms 
+- explore possibility of automatically triangulating control nodes based on signal strength
+- system wide battery monitoring via voltage measuring on controllers
+   
